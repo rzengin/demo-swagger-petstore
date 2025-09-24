@@ -13,19 +13,25 @@ jobs:
       #   uses: actions/checkout@v2
 
       - name: Lint OpenAPI Specification
-        run: inso lint spec /Users/rzengin/Documents/GitHub/demo-swagger-petstore/src/main/resources/openapi.yaml --ci
+        run: inso lint spec /Users/rzengin/GitHub/demo-swagger-petstore/src/main/resources/openapi.yaml --ci
 
-      # - name: Test OpenAPI Spec
-      #   run: inso run test uts_97298 --env localdev --ci
+      - name: Test OpenAPI Spec
+        run: inso run test Demo_Kong_Suite --env "OpenAPI env petstore3.swagger.io" --ci
 
-      # - name: Create OpenAPI Specification From Insomnia
-      #   run: inso export spec spc_ca6fc --output openapi/bankong-openapi.yaml --ci
+      - name: Create OpenAPI Specification From Insomnia
+        run:  inso export spec "Swagger-Petstore" --output gen-petstore-openapi.yaml --ci
 
-      # - name: Generate Kong declarative configuration from Spec
-      #   run: inso generate config openapi/bankong-openapi.yaml --type declarative > bankong-deck2.x.yaml
+      - name: Generate Kong declarative configuration from Spec
+        run: deck file openapi2kong --spec gen-petstore-openapi.yaml --output-file petstorekong-deck.yaml --inso-compatible
 
-      # - name: Convert configuration for 3.0
-      #   run: deck convert --from kong-gateway-2.x --to kong-gateway-3.x --input-file bankong-deck2.x.yaml --output-file bankong-deck3.x.yaml
+      - name: Validate Kong declarative configuration
+        run: deck file validate petstorekong-deck.yaml
 
-      # - name: Validate Kong declarative configuration
-      #   run: deck validate -s bankong-deck3.x.yaml
+      - name: Ping Kong Gateway Instance
+        run:  deck gateway ping --konnect-token $KONNECT_TOKEN  --konnect-control-plane-name demo-local
+
+      - name: Check differences between specificatiln file and Gateway
+        run: deck gateway diff petstorekong-deck.yaml --konnect-token $KONNECT_TOKEN --konnect-control-plane-name demo-local
+
+      - name: Deploy new configuration to Gateway
+        run: deck gateway sync petstorekong-deck.yaml --konnect-token $KONNECT_TOKEN --konnect-control-plane-name demo-local
